@@ -309,6 +309,11 @@
       const WEB_APP_URL =
         "https://script.google.com/macros/s/AKfycbydu4im_ENATvbTz29ya6IPpKCxSklM9PhYBCehRagOvKeGZQRVwuv3TecBit26fsMp/exec"; // ใส่ Web App URL จาก Apps Script
 
+      // อ้างอิง DOM ที่ใช้งาน
+      const form = document.getElementById("memberForm");
+      const statusEl = document.getElementById("statusMessage");
+      const submitBtn = document.getElementById("submitBtn");
+
       async function initLiff() {
         try {
           await liff.init({ liffId: LIFF_ID });
@@ -333,6 +338,9 @@
           console.error("LIFF init error", err);
         }
       }
+
+      // เริ่มต้น LIFF ทันทีเมื่อโหลดสคริปต์
+      initLiff();
 
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
