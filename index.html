@@ -195,6 +195,12 @@
         border: 1px solid #fecaca;
       }
 
+      .status-warning {
+        background-color: #fffbeb;
+        color: #b45309;
+        border: 1px solid #fde68a;
+      }
+
       @media (max-width: 480px) {
         .card {
           padding: 20px 16px 16px;
@@ -314,6 +320,68 @@
       const statusEl = document.getElementById("statusMessage");
       const submitBtn = document.getElementById("submitBtn");
 
+      function disableFormWithMessage(message, variant = "warning") {
+        statusEl.className = "status-message";
+        if (variant === "warning") statusEl.classList.add("status-warning");
+        if (variant === "error") statusEl.classList.add("status-error");
+        if (variant === "success") statusEl.classList.add("status-success");
+        statusEl.innerHTML = `🚫 ${message}<br><span style="font-size:0.75rem;color:#6b7280;">หากต้องการแก้ไขข้อมูล กรุณาติดต่อทีมงาน</span>`;
+        statusEl.style.display = "block";
+        form.querySelectorAll("input, textarea, button").forEach((el) => {
+          el.disabled = true;
+        });
+        submitBtn.innerHTML = '<span class="icon">✔</span><span>สมัครแล้ว</span>';
+      }
+
+      async function preCheckLineUser(lineUserId, displayName) {
+        try {
+          const params = new URLSearchParams();
+          params.append("action", "check");
+          params.append("lineUserId", lineUserId);
+
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000);
+          const res = await fetch(WEB_APP_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+            },
+            body: params.toString(),
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+
+          const raw = await res.text();
+          let data = null;
+          try {
+            data = raw ? JSON.parse(raw) : null;
+          } catch (e) {}
+
+          if (!res.ok) {
+            throw new Error(
+              "HTTP " + res.status + " " + res.statusText + " : " + (data?.message || raw)
+            );
+          }
+
+          const exists =
+            data?.exists === true ||
+            String(data?.status || "").toLowerCase() === "exists" ||
+            String(data?.result || "").toLowerCase() === "exists" ||
+            String(raw || "").toLowerCase().includes("exists");
+
+          if (exists) {
+            disableFormWithMessage(
+              `บัญชี LINE นี้สมัครสมาชิกแล้ว${displayName ? ` (${displayName})` : ""}`,
+              "warning"
+            );
+            return true;
+          }
+        } catch (err) {
+          console.warn("Pre-check failed or unsupported:", err);
+        }
+        return false;
+      }
+
       async function initLiff() {
         try {
           await liff.init({ liffId: LIFF_ID });
@@ -334,6 +402,7 @@
           const lineNameSpan = document.getElementById("lineName");
           lineNameSpan.textContent = `เข้าสู่ระบบด้วย: ${displayName}`;
           profileTag.style.display = "inline-flex";
+          await preCheckLineUser(userId, displayName);
         } catch (err) {
           console.error("LIFF init error", err);
         }
@@ -411,7 +480,17 @@
             (data && (data.status === "success" || data.result === "success")) ||
             (typeof raw === "string" && raw.toLowerCase().includes("success"));
 
-          if (isSuccess) {
+          const isDuplicate =
+            (data && (
+              (typeof data.status === "string" && ["duplicate", "exists", "already", "registered"].includes(data.status.toLowerCase())) ||
+              data.exists === true
+            )) ||
+            (typeof raw === "string" && /duplicate|exists|already|registered/i.test(raw));
+
+          if (isDuplicate) {
+            disableFormWithMessage("บัญชี LINE นี้สมัครสมาชิกแล้ว", "warning");
+            return;
+          } else if (isSuccess) {
             statusEl.textContent =
               "บันทึกข้อมูลเรียบร้อย ขอบคุณสำหรับการสมัครสมาชิก 🎉";
             statusEl.classList.add("status-success");
