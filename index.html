@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>สมัครสมาชิกผ่าน LINE</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- LINE LIFF SDK -->
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #111827, #1f2937);
+      color: #111827;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      padding: 24px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 24px;
+      padding: 24px 20px 20px;
+      box-shadow: 0 18px 40px rgba(15,23,42,0.28);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(148,163,253,0.18);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 18px;
+    }
+
+    .title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #111827;
+      letter-spacing: 0.01em;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    .profile-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #f3f4ff;
+      color: #4f46e5;
+      font-size: 0.7rem;
+      margin-top: 10px;
+    }
+
+    .profile-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #22c55e;
+    }
+
+    form {
+      display: grid;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    label {
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      padding: 9px 11px;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      font-size: 0.85rem;
+      outline: none;
+      transition: all 0.18s ease;
+      background-color: #f9fafb;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 1px rgba(79,70,229,0.08);
+      background-color: #ffffff;
+    }
+
+    textarea {
+      min-height: 70px;
+      resize: vertical;
+    }
+
+    .inline {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 8px;
+    }
+
+    .helper {
+      font-size: 0.7rem;
+      color: #9ca3af;
+    }
+
+    .btn-submit {
+      margin-top: 4px;
+      width: 100%;
+      padding: 11px;
+      border: none;
+      border-radius: 999px;
+      background: linear-gradient(to right, #4f46e5, #6366f1);
+      color: #ffffff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 14px 28px rgba(79,70,229,0.35);
+      transition: all 0.18s ease;
+    }
+
+    .btn-submit span.icon {
+      font-size: 1.1rem;
+    }
+
+    .btn-submit:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 18px 40px rgba(79,70,229,0.42);
+    }
+
+    .btn-submit:active {
+      transform: translateY(1px);
+      box-shadow: 0 10px 24px rgba(79,70,229,0.32);
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.55;
+      cursor: default;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .status-message {
+      margin-top: 10px;
+      font-size: 0.8rem;
+      text-align: center;
+      padding: 8px 10px;
+      border-radius: 999px;
+      display: none;
+    }
+
+    .status-success {
+      background-color: #ecfdf5;
+      color: #16a34a;
+      border: 1px solid #bbf7d0;
+    }
+
+    .status-error {
+      background-color: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+    }
+
+    @media (max-width: 480px) {
+      .card {
+        padding: 20px 16px 16px;
+        border-radius: 20px;
+      }
+      .title {
+        font-size: 1.25rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <div class="title">สมัครสมาชิกสำหรับร้านค้า / บริษัท</div>
+        <div class="subtitle">
+          กรอกข้อมูลเพื่อให้ทีมงานติดต่อกลับและยืนยันการสมัครผ่าน LINE
+        </div>
+        <div id="profileTag" class="profile-tag" style="display:none;">
+          <div class="profile-dot"></div>
+          <span id="lineName">กำลังโหลดโปรไฟล์...</span>
+        </div>
+      </div>
+
+      <form id="memberForm">
+        <!-- Hidden fields for LINE -->
+        <input type="hidden" id="lineUserId" name="lineUserId" />
+        <input type="hidden" id="lineDisplayName" name="lineDisplayName" />
+
+        <div class="field-group">
+          <label for="company">ชื่อร้าน / บริษัท <span style="color:#ef4444">*</span></label>
+          <input type="text" id="company" name="company" placeholder="เช่น บริษัท เอ บี ซี จำกัด"
+                 required />
+        </div>
+
+        <div class="field-group">
+          <label for="fullName">ชื่อ - นามสกุล <span style="color:#ef4444">*</span></label>
+          <input type="text" id="fullName" name="fullName" placeholder="ชื่อ - นามสกุลผู้ติดต่อหลัก" required />
+        </div>
+
+        <div class="field-group">
+          <label for="nickname">ชื่อเล่น</label>
+          <input type="text" id="nickname" name="nickname" placeholder="เช่น เอ, บี, ซี" />
+        </div>
+
+        <div class="field-group">
+          <label for="phone">เบอร์โทรศัพท์ <span style="color:#ef4444">*</span></label>
+          <input type="tel" id="phone" name="phone" placeholder="0XXXXXXXXX" required />
+        </div>
+
+        <div class="field-group">
+          <label for="email">อีเมล</label>
+          <input type="email" id="email" name="email" placeholder="example@company.com" />
+          <div class="helper">ใช้สำหรับส่งข้อมูลยืนยันหรือเอกสาร (ถ้ามี)</div>
+        </div>
+
+        <div class="field-group">
+          <label for="address">ที่อยู่</label>
+          <textarea id="address" name="address" placeholder="บ้านเลขที่ / อาคาร / ถนน / เขต / จังหวัด / รหัสไปรษณีย์"></textarea>
+        </div>
+
+        <button type="submit" class="btn-submit" id="submitBtn">
+          <span class="icon">✔</span>
+          <span>ยืนยันสมัครสมาชิก</span>
+        </button>
+
+        <div id="statusMessage" class="status-message"></div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const LIFF_ID = '2007888230-8AkMP4LO'; // ใส่ LIFF ID ของคุณ
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzjw7jmbMu65OoXGIFMwGUlx8zV2U73wMpvG2ejDYVE0QeB3NYwIrAnP98emQq0AVoB/exec'; // ใส่ Web App URL จาก Apps Script
+
+    async function initLiff() {
+      try {
+        await liff.init({ liffId: LIFF_ID });
+
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
+
+        const profile = await liff.getProfile();
+        const userId = profile.userId;
+        const displayName = profile.displayName;
+
+        document.getElementById('lineUserId').value = userId;
+        document.getElementById('lineDisplayName').value = displayName;
+
+        const profileTag = document.getElementById('profileTag');
+        const lineNameSpan = document.getElementById('lineName');
+        lineNameSpan.textContent = `เข้าสู่ระบบด้วย: ${displayName}`;
+        profileTag.style.display = 'inline-flex';
+      } catch (err) {
+        console.error('LIFF init error', err);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initLiff();
+
+      const form = document.getElementById('memberForm');
+      const submitBtn = document.getElementById('submitBtn');
+      const statusEl = document.getElementById('statusMessage');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        statusEl.style.display = 'none';
+        statusEl.textContent = '';
+        statusEl.className = 'status-message';
+
+        const payload = {
+          lineUserId: document.getElementById('lineUserId').value || '',
+          lineDisplayName: document.getElementById('lineDisplayName').value || '',
+          company: document.getElementById('company').value.trim(),
+          fullName: document.getElementById('fullName').value.trim(),
+          nickname: document.getElementById('nickname').value.trim(),
+          phone: document.getElementById('phone').value.trim(),
+          email: document.getElementById('email').value.trim(),
+          address: document.getElementById('address').value.trim(),
+          userAgent: navigator.userAgent
+        };
+
+        if (!payload.company || !payload.fullName || !payload.phone) {
+          statusEl.textContent = 'กรุณากรอกข้อมูลที่มีเครื่องหมาย * ให้ครบถ้วน';
+          statusEl.classList.add('status-error');
+          statusEl.style.display = 'block';
+          return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="icon">⏳</span><span>กำลังส่งข้อมูล...</span>';
+
+        try {
+          const res = await fetch(WEB_APP_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          });
+
+          const data = await res.json();
+
+          if (data.status === 'success') {
+            statusEl.textContent = 'บันทึกข้อมูลเรียบร้อย ขอบคุณสำหรับการสมัครสมาชิก 🎉';
+            statusEl.classList.add('status-success');
+            statusEl.style.display = 'block';
+
+            form.reset();
+
+            // ถ้าอยากปิดหน้าต่าง LIFF อัตโนมัติ:
+            // setTimeout(() => { if (liff.isInClient()) liff.closeWindow(); }, 1500);
+          } else {
+            throw new Error(data.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+          }
+        } catch (error) {
+          console.error(error);
+          statusEl.textContent = 'ไม่สามารถส่งข้อมูลได้ โปรดลองอีกครั้งหรือติดต่อเจ้าหน้าที่';
+          statusEl.classList.add('status-error');
+          statusEl.style.display = 'block';
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span class="icon">✔</span><span>ยืนยันสมัครสมาชิก</span>';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
