@@ -306,7 +306,8 @@
 
     <script>
       const LIFF_ID = "2007888230-8AkMP4LO"; // ใส่ LIFF ID ของคุณ
-      const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbydu4im_ENATvbTz29ya6IPpKCxSklM9PhYBCehRagOvKeGZQRVwuv3TecBit26fsMp/exec"; // ใส่ Web App URL จาก Apps Script
+      const WEB_APP_URL =
+        "https://script.google.com/macros/s/AKfycbydu4im_ENATvbTz29ya6IPpKCxSklM9PhYBCehRagOvKeGZQRVwuv3TecBit26fsMp/exec"; // ใส่ Web App URL จาก Apps Script
 
       async function initLiff() {
         try {
@@ -320,7 +321,7 @@
           const profile = await liff.getProfile();
           const userId = profile.userId;
           const displayName = profile.displayName;
-          alert(displayName);
+
           document.getElementById("lineUserId").value = userId;
           document.getElementById("lineDisplayName").value = displayName;
 
@@ -333,87 +334,98 @@
         }
       }
 
-      document.addEventListener("DOMContentLoaded", () => {
-        initLiff();
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-        const form = document.getElementById("memberForm");
-        const submitBtn = document.getElementById("submitBtn");
-        const statusEl = document.getElementById("statusMessage");
+        statusEl.style.display = "none";
+        statusEl.textContent = "";
+        statusEl.className = "status-message";
 
-        form.addEventListener("submit", async (e) => {
-          e.preventDefault();
+        const payload = {
+          lineUserId: document.getElementById("lineUserId").value || "",
+          lineDisplayName:
+            document.getElementById("lineDisplayName").value || "",
+          company: document.getElementById("company").value.trim(),
+          fullName: document.getElementById("fullName").value.trim(),
+          nickname: document.getElementById("nickname").value.trim(),
+          phone: document.getElementById("phone").value.trim(),
+          email: document.getElementById("email").value.trim(),
+          address: document.getElementById("address").value.trim(),
+          userAgent: navigator.userAgent,
+        };
 
-          statusEl.style.display = "none";
-          statusEl.textContent = "";
-          statusEl.className = "status-message";
+        if (!payload.company || !payload.fullName || !payload.phone) {
+          statusEl.textContent = "กรุณากรอกข้อมูลที่มีเครื่องหมาย * ให้ครบถ้วน";
+          statusEl.classList.add("status-error");
+          statusEl.style.display = "block";
+          return;
+        }
 
-          const payload = {
-            lineUserId: document.getElementById("lineUserId").value || "",
-            lineDisplayName:
-              document.getElementById("lineDisplayName").value || "",
-            company: document.getElementById("company").value.trim(),
-            fullName: document.getElementById("fullName").value.trim(),
-            nickname: document.getElementById("nickname").value.trim(),
-            phone: document.getElementById("phone").value.trim(),
-            email: document.getElementById("email").value.trim(),
-            address: document.getElementById("address").value.trim(),
-            userAgent: navigator.userAgent,
-          };
+        submitBtn.disabled = true;
+        submitBtn.innerHTML =
+          '<span class="icon">⏳</span><span>กำลังส่งข้อมูล...</span>';
 
-          if (!payload.company || !payload.fullName || !payload.phone) {
-            statusEl.textContent =
-              "กรุณากรอกข้อมูลที่มีเครื่องหมาย * ให้ครบถ้วน";
-            statusEl.classList.add("status-error");
-            statusEl.style.display = "block";
-            return;
-          }
+        try {
+          const res = await fetch(WEB_APP_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
 
-          submitBtn.disabled = true;
-          submitBtn.innerHTML =
-            '<span class="icon">⏳</span><span>กำลังส่งข้อมูล...</span>';
+          const raw = await res.text();
+          console.log("RAW RESPONSE:", raw);
 
+          let data;
           try {
-            const res = await fetch(WEB_APP_URL, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(payload),
-            });
-
-            const text = await res.text();
-            console.log("RAW RESPONSE:", text);
-
-            let data;
-            try {
-              data = JSON.parse(text);
-            } catch (e) {
-              throw new Error("Response is not valid JSON: " + text);
-            }
-
-            if (data.status === "success") {
-              statusEl.textContent =
-                "บันทึกข้อมูลเรียบร้อย ขอบคุณสำหรับการสมัครสมาชิก 🎉";
-              statusEl.classList.add("status-success");
-              statusEl.style.display = "block";
-              form.reset();
-            } else {
-              throw new Error(
-                data.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล"
-              );
-            }
-          } catch (error) {
-            console.error("SUBMIT ERROR:", error);
-            statusEl.textContent =
-              "ไม่สามารถส่งข้อมูลได้ โปรดลองอีกครั้งหรือติดต่อเจ้าหน้าที่";
-            statusEl.classList.add("status-error");
-            statusEl.style.display = "block";
-          } finally {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML =
-              '<span class="icon">✔</span><span>ยืนยันสมัครสมาชิก</span>';
+            data = JSON.parse(raw);
+          } catch (e) {
+            // ถ้า backend ไม่ได้คืน JSON ที่ถูกต้อง
+            throw new Error("Response is not valid JSON: " + raw);
           }
-        });
+
+          if (!res.ok) {
+            // HTTP error เช่น 401 / 403 / 500
+            throw new Error(
+              "HTTP " +
+                res.status +
+                " " +
+                res.statusText +
+                " : " +
+                (data.message || raw)
+            );
+          }
+
+          if (data.status === "success") {
+            statusEl.textContent =
+              "บันทึกข้อมูลเรียบร้อย ขอบคุณสำหรับการสมัครสมาชิก 🎉";
+            statusEl.classList.add("status-success");
+            statusEl.style.display = "block";
+            form.reset();
+          } else {
+            // แสดง error จริงจาก Apps Script
+            throw new Error(
+              data.message || "เกิดข้อผิดพลาด (status != success)"
+            );
+          }
+        } catch (error) {
+          console.error("SUBMIT ERROR:", error);
+
+          // โชว์ข้อความจริงให้ user เห็น
+          statusEl.innerHTML = `
+      ไม่สามารถส่งข้อมูลได้<br>
+      <span style="font-size:0.7rem; color:#6b7280;">
+        รายละเอียด: ${error.message || error}
+      </span>
+    `;
+          statusEl.classList.add("status-error");
+          statusEl.style.display = "block";
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML =
+            '<span class="icon">✔</span><span>ยืนยันสมัครสมาชิก</span>';
+        }
       });
     </script>
   </body>
