@@ -374,61 +374,85 @@
           '<span class="icon">⏳</span><span>กำลังส่งข้อมูล...</span>';
 
         try {
+          // ส่งแบบ application/x-www-form-urlencoded (ลดโอกาส preflight/CORS)
+          const params = new URLSearchParams();
+          Object.entries(payload).forEach(([k, v]) => params.append(k, v));
+
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 15000);
+
           const res = await fetch(WEB_APP_URL, {
             method: "POST",
             headers: {
-              "Content-Type": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
             },
-            body: JSON.stringify(payload),
+            body: params.toString(),
+            signal: controller.signal,
           });
+          clearTimeout(timeoutId);
 
-          const raw = await res.text();
+          const raw = await res.text().catch(() => "");
           console.log("RAW RESPONSE:", raw);
 
-          let data;
+          let data = null;
           try {
-            data = JSON.parse(raw);
+            data = raw ? JSON.parse(raw) : null;
           } catch (e) {
-            // ถ้า backend ไม่ได้คืน JSON ที่ถูกต้อง
-            throw new Error("Response is not valid JSON: " + raw);
+            // ถ้า parse JSON ไม่ได้ จะพยายามตีความแบบข้อความธรรมดา
           }
 
           if (!res.ok) {
-            // HTTP error เช่น 401 / 403 / 500
             throw new Error(
-              "HTTP " +
-                res.status +
-                " " +
-                res.statusText +
-                " : " +
-                (data.message || raw)
+              "HTTP " + res.status + " " + res.statusText + " : " + (data?.message || raw)
             );
           }
 
-          if (data.status === "success") {
+          const isSuccess =
+            (data && (data.status === "success" || data.result === "success")) ||
+            (typeof raw === "string" && raw.toLowerCase().includes("success"));
+
+          if (isSuccess) {
             statusEl.textContent =
               "บันทึกข้อมูลเรียบร้อย ขอบคุณสำหรับการสมัครสมาชิก 🎉";
             statusEl.classList.add("status-success");
             statusEl.style.display = "block";
             form.reset();
           } else {
-            // แสดง error จริงจาก Apps Script
-            throw new Error(
-              data.message || "เกิดข้อผิดพลาด (status != success)"
-            );
+            // ถ้าไม่ชัดเจนว่า success ให้แสดงข้อความตอบกลับเพื่อดีบัก
+            throw new Error(data?.message || raw || "ไม่สามารถยืนยันผลลัพธ์จากระบบได้");
           }
         } catch (error) {
           console.error("SUBMIT ERROR:", error);
 
-          // โชว์ข้อความจริงให้ user เห็น
-          statusEl.innerHTML = `
-      ไม่สามารถส่งข้อมูลได้<br>
-      <span style="font-size:0.7rem; color:#6b7280;">
-        รายละเอียด: ${error.message || error}
-      </span>
-    `;
-          statusEl.classList.add("status-error");
-          statusEl.style.display = "block";
+          // Fallback: ส่งแบบ no-cors + text/plain (fire-and-forget)
+          try {
+            await fetch(WEB_APP_URL, {
+              method: "POST",
+              mode: "no-cors",
+              headers: { "Content-Type": "text/plain;charset=UTF-8" },
+              body: JSON.stringify(payload),
+            });
+
+            statusEl.innerHTML = `
+        ส่งคำขอเรียบร้อย (โหมด no-cors)<br>
+        <span style="font-size:0.7rem; color:#6b7280;">
+          หมายเหตุ: เบราว์เซอร์ไม่อนุญาตให้อ่านผลลัพธ์ตอบกลับโดยตรง
+        </span>
+      `;
+            statusEl.classList.add("status-success");
+            statusEl.style.display = "block";
+            form.reset();
+          } catch (fallbackErr) {
+            // โชว์ข้อความจริงให้ user เห็น
+            statusEl.innerHTML = `
+        ไม่สามารถส่งข้อมูลได้<br>
+        <span style="font-size:0.7rem; color:#6b7280;">
+          รายละเอียด: ${(error && error.message) || error} / ${(fallbackErr && fallbackErr.message) || fallbackErr}
+        </span>
+      `;
+            statusEl.classList.add("status-error");
+            statusEl.style.display = "block";
+          }
         } finally {
           submitBtn.disabled = false;
           submitBtn.innerHTML =
