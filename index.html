@@ -409,6 +409,7 @@
           try {
             data = raw ? JSON.parse(raw) : null;
           } catch (e) {}
+          console.log("PRECHECK RAW:", raw, "PARSED:", data);
 
           if (!res.ok) {
             throw new Error(
@@ -419,8 +420,7 @@
           const exists =
             data?.exists === true ||
             String(data?.status || "").toLowerCase() === "exists" ||
-            String(data?.result || "").toLowerCase() === "exists" ||
-            String(raw || "").toLowerCase().includes("exists");
+            String(data?.result || "").toLowerCase() === "exists";
 
           if (exists) {
             disableFormWithMessage(
@@ -538,7 +538,8 @@
               (typeof data.status === "string" && ["duplicate", "exists", "already", "registered"].includes(data.status.toLowerCase())) ||
               data.exists === true
             )) ||
-            (typeof raw === "string" && /duplicate|exists|already|registered/i.test(raw));
+            // ใช้ข้อความ fallback เฉพาะกรณี parse JSON ไม่ได้เท่านั้น
+            (!data && typeof raw === "string" && /duplicate|already|registered/i.test(raw));
 
           if (isDuplicate) {
             disableFormWithMessage("บัญชี LINE นี้สมัครสมาชิกแล้ว", "warning");
