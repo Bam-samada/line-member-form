@@ -50,6 +50,35 @@
         margin-bottom: 18px;
       }
 
+      /* Logo strip (two logos) */
+      .logo-strip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .logo-img {
+        display: block;
+        height: 40px;
+        max-width: 160px;
+        object-fit: contain;
+      }
+
+      .logo-img.partner {
+        height: 36px;
+        opacity: 0.95;
+      }
+
+      .logo-divider {
+        color: #9ca3af;
+        font-weight: 600;
+        font-size: 1.1rem;
+        line-height: 1;
+        user-select: none;
+      }
+
       .title {
         font-size: 1.4rem;
         font-weight: 700;
@@ -209,6 +238,16 @@
         .title {
           font-size: 1.25rem;
         }
+        .logo-strip {
+          gap: 8px;
+        }
+        .logo-img {
+          height: 34px;
+          max-width: 130px;
+        }
+        .logo-img.partner {
+          height: 30px;
+        }
       }
     </style>
   </head>
@@ -216,6 +255,20 @@
     <div class="container">
       <div class="card">
         <div class="header">
+          <!-- โลโก้สองตัวแบบ Co-branding ด้านบน -->
+          <div class="logo-strip">
+            <img
+              src="assets/logo/CI LOGO-06.png"
+              alt="โลโก้หลัก"
+              class="logo-img"
+            />
+            <span class="logo-divider">×</span>
+            <img
+              src="assets/logo/S-MAN ชูนิ้วชี้ขึ้นข้างบน 1.jpg"
+              alt="โลโก้พาร์ทเนอร์"
+              class="logo-img partner"
+            />
+          </div>
           <div class="title">สมัครสมาชิกกับสหสินไทยยนต์</div>
           <div class="subtitle">
             กรอกข้อมูลเพื่อให้ทีมงานติดต่อกลับและยืนยันการสมัครผ่าน LINE
