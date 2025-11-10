@@ -335,59 +335,17 @@ function buildFlexPointsBubble(data) {
       layout: "vertical",
       contents: [
         {
-          type: "image",
-          url: "https://bam-samada.github.io/line-member-form/assets/logo/1029999.jpg",
-          size: "full",
-          aspectMode: "cover",
-          aspectRatio: "20:13",
-          gravity: "center"
-        },
-        {
           type: "box",
           layout: "vertical",
-          contents: [
-            {
-              type: "box",
-              layout: "horizontal",
-              contents: [
-                {
-                  type: "image",
-                  url: "https://bam-samada.github.io/line-member-form/assets/logo/CI%20LOGO-06.png",
-                  size: "xs",
-                  aspectMode: "fit",
-                  flex: 0
-                },
-                {
-                  type: "text",
-                  text: "×",
-                  size: "lg",
-                  weight: "bold",
-                  color: "#FFFFFF",
-                  gravity: "center",
-                  flex: 0,
-                  margin: "sm"
-                },
-                {
-                  type: "image",
-                  url: "https://bam-samada.github.io/line-member-form/assets/logo/S-MAN%20%E0%B8%8A%E0%B8%B9%E0%B8%99%E0%B8%B4%E0%B9%89%E0%B8%A7%E0%B8%8A%E0%B8%B5%E0%B9%89%E0%B8%82%E0%B8%B6%E0%B9%89%E0%B8%99%E0%B8%82%E0%B9%89%E0%B8%B2%E0%B8%87%E0%B8%9A%E0%B8%99%201.jpg",
-                  size: "xs",
-                  aspectMode: "fit",
-                  flex: 0,
-                  margin: "sm"
-                }
-              ]
-            }
-          ],
+          contents: [],
           position: "absolute",
-          offsetTop: "0px",
-          offsetStart: "0px",
-          offsetEnd: "0px",
-          paddingAll: "18px",
+          width: "100%",
+          height: "100%",
           background: {
             type: "linearGradient",
             angle: "180deg",
-            startColor: "#00000088",
-            endColor: "#00000000"
+            endColor: "#00000099",
+            startColor: "#00000010"
           }
         },
         {
@@ -396,33 +354,23 @@ function buildFlexPointsBubble(data) {
           contents: [
             {
               type: "text",
-              text: "คะแนนสะสม",
+              text: "บัตรสมาชิก",
               color: "#FFFFFF",
-              weight: "bold",
-              size: "xxl",
-              align: "center"
+              size: "sm",
+              weight: "bold"
             },
             {
               type: "text",
               text: name,
-              color: "#FEF3C7",
-              size: "lg",
-              align: "center",
-              margin: "sm",
-              weight: "bold"
+              color: "#FFFFFF",
+              size: "xl",
+              weight: "bold",
+              margin: "xs"
             }
           ],
           position: "absolute",
-          offsetBottom: "0px",
-          offsetStart: "0px",
-          offsetEnd: "0px",
-          paddingAll: "20px",
-          background: {
-            type: "linearGradient",
-            angle: "0deg",
-            startColor: "#00000088",
-            endColor: "#00000000"
-          }
+          offsetBottom: "20px",
+          offsetStart: "20px"
         }
       ],
       paddingAll: "0px"
@@ -430,108 +378,239 @@ function buildFlexPointsBubble(data) {
     body: {
       type: "box",
       layout: "vertical",
-      spacing: "xl",
       contents: [
         {
           type: "box",
           layout: "vertical",
           contents: [
             {
-              type: "text",
-              text: String(points),
-              align: "center",
-              weight: "bold",
-              size: "5xl",
-              color: "#F59E0B"
-            },
-            {
-              type: "text",
-              text: "POINTS",
-              align: "center",
-              size: "md",
-              color: "#78716C",
-              margin: "md",
-              weight: "bold"
+              type: "image",
+              url: "https://bam-samada.github.io/line-member-form/assets/logo/1029999.jpg",
+              size: "full",
+              aspectMode: "cover",
+              gravity: "center",
+              align: "center"
             }
           ],
-          paddingAll: "32px",
-          backgroundColor: "#FEF3C7",
-          cornerRadius: "24px"
+          cornerRadius: "15px"
+        },
+        {
+          type: "box",
+          layout: "horizontal",
+          contents: [
+            {
+              type: "image",
+              url: "https://bam-samada.github.io/line-member-form/assets/logo/CI%20LOGO-06.png",
+              size: "xxs",
+              aspectMode: "fit",
+              flex: 0
+            },
+            {
+              type: "box",
+              layout: "baseline",
+              contents: [
+                {
+                  type: "text",
+                  text: "คะแนนสะสมของคุณ",
+                  size: "sm",
+                  color: "#78716C",
+                  align: "center",
+                  weight: "bold",
+                  offsetTop: "10px"
+                }
+              ],
+              flex: 1
+            },
+            {
+              type: "image",
+              url: "https://bam-samada.github.io/line-member-form/assets/logo/S-MAN%20%E0%B8%8A%E0%B8%B9%E0%B8%99%E0%B8%B4%E0%B9%89%E0%B8%A7%E0%B8%8A%E0%B8%B5%E0%B9%89%E0%B8%82%E0%B8%B6%E0%B9%89%E0%B8%99%E0%B8%82%E0%B9%89%E0%B8%B2%E0%B8%87%E0%B8%9A%E0%B8%99%201.jpg",
+              size: "xxs",
+              aspectMode: "fit",
+              flex: 0
+            }
+          ],
+          position: "relative",
+          paddingTop: "10px"
         },
         {
           type: "box",
           layout: "vertical",
-          spacing: "lg",
           contents: [
             {
               type: "box",
               layout: "horizontal",
               contents: [
                 {
-                  type: "text",
-                  text: "ยอดสั่งซื้อรวม",
-                  size: "sm",
-                  color: "#78716C",
-                  flex: 1
+                  type: "box",
+                  layout: "vertical",
+                  contents: [
+                    {
+                      type: "text",
+                      text: "💰",
+                      size: "xl"
+                    }
+                  ],
+                  flex: 0,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  paddingAll: "8px",
+                  backgroundColor: "#FEF3C7",
+                  cornerRadius: "12px",
+                  margin: "none"
                 },
                 {
-                  type: "text",
-                  text: "฿" + totalFmt,
-                  align: "end",
-                  size: "lg",
-                  weight: "bold",
-                  color: "#1F2937",
-                  flex: 1
+                  type: "box",
+                  layout: "vertical",
+                  contents: [
+                    {
+                      type: "text",
+                      text: "คะแนน",
+                      size: "xs",
+                      color: "#9CA3AF"
+                    },
+                    {
+                      type: "text",
+                      text: String(points),
+                      size: "xl",
+                      weight: "bold",
+                      color: "#1F2937",
+                      margin: "xs"
+                    }
+                  ],
+                  flex: 1,
+                  margin: "md"
                 }
               ]
             },
             {
-              type: "separator"
+              type: "separator",
+              margin: "lg",
+              color: "#E5E7EB"
             },
             {
               type: "box",
               layout: "horizontal",
               contents: [
                 {
-                  type: "text",
-                  text: "อัตราแลกแต้ม",
-                  size: "sm",
-                  color: "#78716C",
-                  flex: 1
+                  type: "box",
+                  layout: "vertical",
+                  contents: [
+                    {
+                      type: "text",
+                      text: "💰",
+                      size: "xl"
+                    }
+                  ],
+                  flex: 0,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  paddingAll: "8px",
+                  backgroundColor: "#14C08199",
+                  cornerRadius: "12px"
                 },
                 {
-                  type: "text",
-                  text: "100฿ = 1PT",
-                  align: "end",
-                  size: "md",
-                  weight: "bold",
-                  color: "#1F2937",
-                  flex: 1
+                  type: "box",
+                  layout: "vertical",
+                  contents: [
+                    {
+                      type: "text",
+                      text: "ยอดสั่งซื้อรวม",
+                      size: "xs",
+                      color: "#9CA3AF"
+                    },
+                    {
+                      type: "text",
+                      text: "฿" + totalFmt,
+                      size: "lg",
+                      weight: "bold",
+                      color: "#1F2937",
+                      margin: "xs"
+                    }
+                  ],
+                  flex: 1,
+                  margin: "md"
                 }
-              ]
+              ],
+              margin: "lg"
+            },
+            {
+              type: "separator",
+              margin: "lg",
+              color: "#E5E7EB"
+            },
+            {
+              type: "box",
+              layout: "horizontal",
+              contents: [
+                {
+                  type: "box",
+                  layout: "vertical",
+                  contents: [
+                    {
+                      type: "text",
+                      text: "⚡",
+                      size: "xl"
+                    }
+                  ],
+                  flex: 0,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  paddingAll: "8px",
+                  backgroundColor: "#DBEAFE",
+                  cornerRadius: "12px"
+                },
+                {
+                  type: "box",
+                  layout: "vertical",
+                  contents: [
+                    {
+                      type: "text",
+                      text: "อัตราแลกแต้ม",
+                      size: "xs",
+                      color: "#9CA3AF"
+                    },
+                    {
+                      type: "text",
+                      text: "100฿ = 1 Point",
+                      size: "lg",
+                      weight: "bold",
+                      color: "#1F2937",
+                      margin: "xs"
+                    }
+                  ],
+                  flex: 1,
+                  margin: "md"
+                }
+              ],
+              margin: "lg"
             }
           ],
           paddingAll: "20px",
-          backgroundColor: "#F9FAFB",
-          cornerRadius: "20px"
-        }
-      ],
-      paddingAll: "24px"
-    },
-    footer: {
-      type: "box",
-      layout: "vertical",
-      contents: [
+          backgroundColor: "#FFFFFF",
+          cornerRadius: "20px",
+          borderWidth: "2px",
+          borderColor: "#1B7DE799",
+          margin: "xl"
+        },
         {
-          type: "text",
-          text: "ระบบสมาชิก S-MAN",
-          size: "xs",
-          color: "#9CA3AF",
-          align: "center"
+          type: "box",
+          layout: "vertical",
+          contents: [
+            {
+              type: "text",
+              text: "สะสมแต้มได้ทุกการซื้อ",
+              size: "xs",
+              color: "#6B7280",
+              align: "center"
+            }
+          ],
+          paddingAll: "12px",
+          backgroundColor: "#F9FAFB",
+          cornerRadius: "16px",
+          margin: "lg"
         }
       ],
-      paddingAll: "16px",
-      backgroundColor: "#FFFFFF"
+      spacing: "none"
     }
   };
 }
