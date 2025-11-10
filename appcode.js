@@ -330,47 +330,66 @@ function buildFlexPointsBubble(data) {
   return {
     type: "bubble",
     size: "mega",
-    header: {
-      type: "box",
-      layout: "horizontal",
-      contents: [
-        {
-          type: "image",
-          url: "https://bam-samada.github.io/line-member-form/assets/logo/CI%20LOGO-06.png",
-          size: "sm",
-          aspectMode: "fit",
-          aspectRatio: "1:1",
-          flex: 0
-        },
-        {
-          type: "text",
-          text: "X",
-          size: "xl",
-          weight: "bold",
-          color: "#9CA3AF",
-          gravity: "center",
-          flex: 0,
-          margin: "md",
-          align: "center"
-        },
-        {
-          type: "image",
-          url: "https://bam-samada.github.io/line-member-form/assets/logo/S-MAN%20%E0%B8%8A%E0%B8%B9%E0%B8%99%E0%B8%B4%E0%B9%89%E0%B8%A7%E0%B8%8A%E0%B8%B5%E0%B9%89%E0%B8%82%E0%B8%B6%E0%B9%89%E0%B8%99%E0%B8%82%E0%B9%89%E0%B8%B2%E0%B8%87%E0%B8%9A%E0%B8%99%201.jpg",
-          size: "sm",
-          aspectMode: "fit",
-          aspectRatio: "1:1",
-          flex: 0,
-          margin: "md"
-        }
-      ],
-      backgroundColor: "#FFFFFF",
-      paddingAll: "20px",
-      justifyContent: "center"
-    },
     hero: {
       type: "box",
       layout: "vertical",
       contents: [
+        {
+          type: "image",
+          url: "https://bam-samada.github.io/line-member-form/assets/logo/1029999.jpg",
+          size: "full",
+          aspectMode: "cover",
+          aspectRatio: "20:13",
+          gravity: "center"
+        },
+        {
+          type: "box",
+          layout: "vertical",
+          contents: [
+            {
+              type: "box",
+              layout: "horizontal",
+              contents: [
+                {
+                  type: "image",
+                  url: "https://bam-samada.github.io/line-member-form/assets/logo/CI%20LOGO-06.png",
+                  size: "xs",
+                  aspectMode: "fit",
+                  flex: 0
+                },
+                {
+                  type: "text",
+                  text: "×",
+                  size: "lg",
+                  weight: "bold",
+                  color: "#FFFFFF",
+                  gravity: "center",
+                  flex: 0,
+                  margin: "sm"
+                },
+                {
+                  type: "image",
+                  url: "https://bam-samada.github.io/line-member-form/assets/logo/S-MAN%20%E0%B8%8A%E0%B8%B9%E0%B8%99%E0%B8%B4%E0%B9%89%E0%B8%A7%E0%B8%8A%E0%B8%B5%E0%B9%89%E0%B8%82%E0%B8%B6%E0%B9%89%E0%B8%99%E0%B8%82%E0%B9%89%E0%B8%B2%E0%B8%87%E0%B8%9A%E0%B8%99%201.jpg",
+                  size: "xs",
+                  aspectMode: "fit",
+                  flex: 0,
+                  margin: "sm"
+                }
+              ]
+            }
+          ],
+          position: "absolute",
+          offsetTop: "0px",
+          offsetStart: "0px",
+          offsetEnd: "0px",
+          paddingAll: "18px",
+          background: {
+            type: "linearGradient",
+            angle: "180deg",
+            startColor: "#00000088",
+            endColor: "#00000000"
+          }
+        },
         {
           type: "box",
           layout: "vertical",
@@ -380,7 +399,7 @@ function buildFlexPointsBubble(data) {
               text: "คะแนนสะสม",
               color: "#FFFFFF",
               weight: "bold",
-              size: "xl",
+              size: "xxl",
               align: "center"
             },
             {
@@ -389,19 +408,24 @@ function buildFlexPointsBubble(data) {
               color: "#FEF3C7",
               size: "lg",
               align: "center",
-              margin: "md",
+              margin: "sm",
               weight: "bold"
             }
           ],
-          paddingAll: "20px"
+          position: "absolute",
+          offsetBottom: "0px",
+          offsetStart: "0px",
+          offsetEnd: "0px",
+          paddingAll: "20px",
+          background: {
+            type: "linearGradient",
+            angle: "0deg",
+            startColor: "#00000088",
+            endColor: "#00000000"
+          }
         }
       ],
-      background: {
-        type: "linearGradient",
-        angle: "135deg",
-        startColor: "#F59E0B",
-        endColor: "#D97706"
-      }
+      paddingAll: "0px"
     },
     body: {
       type: "box",
