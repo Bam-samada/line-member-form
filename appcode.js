@@ -1,18 +1,28 @@
-const SHEET_ID = '1f6WHZz1y_7OblNPLGSw3cSe8UY97vqmD9UzBNQTxS5g';
-const SHEET_NAME = 'FormResponses';
+const SHEET_ID = "1f6WHZz1y_7OblNPLGSw3cSe8UY97vqmD9UzBNQTxS5g";
+const SHEET_NAME = "FormResponses";
 
 // LINE Messaging API: ตั้งค่า Channel Access Token ตรงนี้ (ใส่ค่าโดยตรงในโค้ด)
 // หมายเหตุ: เปลี่ยนสตริงด้านล่างเป็น Channel Access Token ของบอทคุณ
-const LINE_CHANNEL_ACCESS_TOKEN = 'bwfEzqJqn1bIkHKdX7lPgPF33+4HsYMlL/gIMGLrhkvo053s1Ig8JEzu1lcO2Ci5bEDESBSWkKcLtPIY+hA74lQmCuXzQDNj1/YDegnwckwjmqh9y5BV0Tz2tWtYBHbzCrURW6mMTZBv/to93me8YAdB04t89/1O/w1cDnyilFU=';
-const LINE_REPLY_URL = 'https://api.line.me/v2/bot/message/reply';
-const LINE_PROFILE_URL = 'https://api.line.me/v2/bot/profile/';
+const LINE_CHANNEL_ACCESS_TOKEN =
+  "bwfEzqJqn1bIkHKdX7lPgPF33+4HsYMlL/gIMGLrhkvo053s1Ig8JEzu1lcO2Ci5bEDESBSWkKcLtPIY+hA74lQmCuXzQDNj1/YDegnwckwjmqh9y5BV0Tz2tWtYBHbzCrURW6mMTZBv/to93me8YAdB04t89/1O/w1cDnyilFU=";
+const LINE_REPLY_URL = "https://api.line.me/v2/bot/message/reply";
+const LINE_PROFILE_URL = "https://api.line.me/v2/bot/profile/";
 
 // เรียกด้วย GET (เช่น เปิดลิงก์ใน browser ตรงๆ)
 // เอาไว้เช็คว่า Web App ทำงาน + ตั้ง permission ถูก
 function doGet(e) {
-  return ContentService
-    .createTextOutput('OK: Web App is running. Use POST to submit data.')
-    .setMimeType(ContentService.MimeType.TEXT);
+  const params = e && e.parameter;
+
+  // ทดสอบดู JSON ของ Flex Message
+  if (params && params.action === "testFlex") {
+    const flexMsg = testFlexMessage();
+    return ContentService.createTextOutput(JSON.stringify(flexMsg, null, 2))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  return ContentService.createTextOutput(
+    "OK: Web App is running. Use POST to submit data."
+  ).setMimeType(ContentService.MimeType.TEXT);
 }
 
 function doPost(e) {
@@ -20,9 +30,9 @@ function doPost(e) {
     // 1) ตรวจจับ LINE Webhook ก่อน (application/json ที่มี events)
     if (isLineWebhook(e)) {
       handleLineWebhook(e);
-      return ContentService
-        .createTextOutput('OK')
-        .setMimeType(ContentService.MimeType.TEXT);
+      return ContentService.createTextOutput("OK").setMimeType(
+        ContentService.MimeType.TEXT
+      );
     }
 
     // 2) โหมดฟอร์ม (หน้าเว็บ) เดิม - ต้องมี action parameter
@@ -30,49 +40,56 @@ function doPost(e) {
 
     // ถ้าไม่มี action หรือ lineUserId แสดงว่าไม่ใช่คำขอจากฟอร์ม (อาจเป็นข้อความจากแชท)
     if (!req.action && !req.lineUserId) {
-      return jsonOutput({ status: 'ignored', message: 'Not a form submission' });
+      return jsonOutput({
+        status: "ignored",
+        message: "Not a form submission",
+      });
     }
 
     // เตรียมชีต + หัวตาราง
     const sheet = ensureSheet();
 
     // เช็คซ้ำตาม LINE UserID
-    if (req.action === 'check') {
-      const exists = !!req.lineUserId && findByLineUserId(sheet, req.lineUserId) !== -1;
-      return jsonOutput({ status: exists ? 'exists' : 'not_found', exists });
+    if (req.action === "check") {
+      const exists =
+        !!req.lineUserId && findByLineUserId(sheet, req.lineUserId) !== -1;
+      return jsonOutput({ status: exists ? "exists" : "not_found", exists });
     }
 
     // สมัครจริง: ต้องมี lineUserId
     if (!req.lineUserId) {
-      return jsonOutput({ status: 'error', message: 'Missing lineUserId' });
+      return jsonOutput({ status: "error", message: "Missing lineUserId" });
     }
 
     // ถ้ามีอยู่แล้ว ไม่บันทึกซ้ำ
     const rowIndex = findByLineUserId(sheet, req.lineUserId);
     if (rowIndex !== -1) {
-      return jsonOutput({ status: 'exists', exists: true, message: 'Duplicate lineUserId' });
+      return jsonOutput({
+        status: "exists",
+        exists: true,
+        message: "Duplicate lineUserId",
+      });
     }
 
     // บันทึกแถวใหม่
     sheet.appendRow([
       new Date(),
-      req.lineUserId || '',
-      req.lineDisplayName || '',
-      req.companyType || '',
-      req.company || '',
-      req.fullName || '',
-      req.nickname || '',
-      req.phone || '',
-      req.email || '',
-      req.address || '',
-      req.userAgent || ''
+      req.lineUserId || "",
+      req.lineDisplayName || "",
+      req.companyType || "",
+      req.company || "",
+      req.fullName || "",
+      req.nickname || "",
+      req.phone || "",
+      req.email || "",
+      req.address || "",
+      req.userAgent || "",
     ]);
 
-    return jsonOutput({ status: 'success', message: 'Saved to Google Sheet' });
-
+    return jsonOutput({ status: "success", message: "Saved to Google Sheet" });
   } catch (error) {
-    console.error('doPost error:', error);
-    return jsonOutput({ status: 'error', message: error.toString() });
+    console.error("doPost error:", error);
+    return jsonOutput({ status: "error", message: error.toString() });
   }
 }
 
@@ -81,8 +98,8 @@ function doPost(e) {
 function isLineWebhook(e) {
   try {
     if (!e || !e.postData || !e.postData.contents) return false;
-    const contentType = (e.postData.type || '').toLowerCase();
-    if (contentType.indexOf('application/json') === -1) return false;
+    const contentType = (e.postData.type || "").toLowerCase();
+    if (contentType.indexOf("application/json") === -1) return false;
     const body = JSON.parse(e.postData.contents);
     return body && Array.isArray(body.events);
   } catch (_) {
@@ -93,21 +110,35 @@ function isLineWebhook(e) {
 function handleLineWebhook(e) {
   var body = {};
   try {
-    body = JSON.parse(e.postData.contents || '{}');
+    body = JSON.parse(e.postData.contents || "{}");
   } catch (err) {
-    console.error('Invalid JSON webhook:', err);
+    console.error("Invalid JSON webhook:", err);
     return;
   }
 
   const events = body.events || [];
   events.forEach(function (event) {
     try {
-      if (event.type === 'message' && event.message && event.message.type === 'text') {
-        const text = String(event.message.text || '').trim();
+      if (
+        event.type === "message" &&
+        event.message &&
+        event.message.type === "text"
+      ) {
+        const text = String(event.message.text || "").trim();
         const norm = normalizeThai(text);
         // คีย์เวิร์ดที่ใช้เรียกดูคะแนน
-        const keywords = ['point', 'points', 'คะแนน', 'คะแนนของฉัน', 'พอยท์', 'พอยต์', 'แต้ม'];
-        const matched = keywords.some(function (k) { return norm.indexOf(normalizeThai(k)) !== -1; });
+        const keywords = [
+          "point",
+          "points",
+          "คะแนน",
+          "คะแนนของฉัน",
+          "พอยท์",
+          "พอยต์",
+          "แต้ม",
+        ];
+        const matched = keywords.some(function (k) {
+          return norm.indexOf(normalizeThai(k)) !== -1;
+        });
 
         if (matched) {
           replyUserPoints(event);
@@ -117,38 +148,40 @@ function handleLineWebhook(e) {
         // ข้อความอื่นๆ: ตอบกลับข้อความเดียวกัน (echo)
         const replyToken = event.replyToken;
         if (replyToken) {
-          const messages = [{ type: 'text', text: text }];
+          const messages = [{ type: "text", text: text }];
           lineReply(replyToken, messages);
         }
       }
       // ไม่จัดการอีเวนต์อื่น ๆ
     } catch (evErr) {
-      console.error('handle event error:', evErr);
+      console.error("handle event error:", evErr);
     }
   });
 }
 
 function replyUserPoints(event) {
-  const userId = (event && event.source && event.source.userId) || '';
+  const userId = (event && event.source && event.source.userId) || "";
   const replyToken = event.replyToken;
   if (!userId || !replyToken) return;
 
   const sheet = ensureSheet();
   const rowIndex = findByLineUserId(sheet, userId);
 
-  let displayName = '';
+  let displayName = "";
   try {
     // พยายามอ่านชื่อจากชีตก่อน (คอลัมน์ 3: LINE Name)
     if (rowIndex !== -1) {
-      const vals = sheet.getRange(rowIndex, 1, 1, sheet.getLastColumn()).getValues()[0];
-      displayName = String(vals[2] || '');
+      const vals = sheet
+        .getRange(rowIndex, 1, 1, sheet.getLastColumn())
+        .getValues()[0];
+      displayName = String(vals[2] || "");
     }
     if (!displayName) {
       // fallback: ดึงโปรไฟล์จาก LINE API
       const prof = getLineProfile(userId);
-      displayName = (prof && prof.displayName) || '';
+      displayName = (prof && prof.displayName) || "";
     }
-  } catch (_) {}
+  } catch (_) { }
 
   const orderTotal = getOrderTotalForUser(sheet, rowIndex);
   const points = Math.floor(orderTotal / 100);
@@ -156,71 +189,77 @@ function replyUserPoints(event) {
   const flexBubble = buildFlexPointsBubble({
     displayName: displayName,
     orderTotal: orderTotal,
-    points: points
+    points: points,
   });
 
   const messages = [
     {
-      type: 'flex',
-      altText: 'คะแนนสะสมของคุณ: ' + points + ' POINTS',
-      contents: flexBubble
-    }
+      type: "flex",
+      altText: "คะแนนสะสมของคุณ: " + points + " POINTS",
+      contents: flexBubble,
+    },
   ];
   lineReply(replyToken, messages);
 }
 
 function buildPointsTextMessage(data) {
-  const name = data.displayName || 'สมาชิก';
+  const name = data.displayName || "สมาชิก";
   const total = data.orderTotal || 0;
   const points = data.points || 0;
   const totalFmt = formatCurrency(total);
   var lines = [];
-  lines.push('⭐ คะแนนสะสมของคุณ');
-  lines.push('ชื่อ: ' + name);
-  lines.push('ยอดสั่งซื้อรวม: ฿' + totalFmt);
-  lines.push('คะแนน: ' + String(points) + ' POINTS');
-  lines.push('อัตราแลกแต้ม: 100 บาท = 1 POINT');
-  return lines.join('\n');
+  lines.push("⭐ คะแนนสะสมของคุณ");
+  lines.push("ชื่อ: " + name);
+  lines.push("ยอดสั่งซื้อรวม: ฿" + totalFmt);
+  lines.push("คะแนน: " + String(points) + " POINTS");
+  lines.push("อัตราแลกแต้ม: 100 บาท = 1 POINT");
+  return lines.join("\n");
 }
 
 function getLineProfile(userId) {
   if (!LINE_CHANNEL_ACCESS_TOKEN) return null;
   try {
-    const res = UrlFetchApp.fetch(LINE_PROFILE_URL + encodeURIComponent(userId), {
-      method: 'get',
-      headers: { Authorization: 'Bearer ' + LINE_CHANNEL_ACCESS_TOKEN },
-      muteHttpExceptions: true,
-    });
+    const res = UrlFetchApp.fetch(
+      LINE_PROFILE_URL + encodeURIComponent(userId),
+      {
+        method: "get",
+        headers: { Authorization: "Bearer " + LINE_CHANNEL_ACCESS_TOKEN },
+        muteHttpExceptions: true,
+      }
+    );
     const code = res.getResponseCode();
     if (code >= 200 && code < 300) {
-      return JSON.parse(res.getContentText() || '{}');
+      return JSON.parse(res.getContentText() || "{}");
     }
   } catch (err) {
-    console.warn('getLineProfile error:', err);
+    console.warn("getLineProfile error:", err);
   }
   return null;
 }
 
 function lineReply(replyToken, messages) {
   if (!LINE_CHANNEL_ACCESS_TOKEN) {
-    console.warn('Missing LINE_CHANNEL_ACCESS_TOKEN: skip reply');
+    console.warn("Missing LINE_CHANNEL_ACCESS_TOKEN: skip reply");
     return;
   }
   try {
-    const payload = JSON.stringify({ replyToken: replyToken, messages: messages });
+    const payload = JSON.stringify({
+      replyToken: replyToken,
+      messages: messages,
+    });
     const res = UrlFetchApp.fetch(LINE_REPLY_URL, {
-      method: 'post',
-      contentType: 'application/json',
-      headers: { Authorization: 'Bearer ' + LINE_CHANNEL_ACCESS_TOKEN },
+      method: "post",
+      contentType: "application/json",
+      headers: { Authorization: "Bearer " + LINE_CHANNEL_ACCESS_TOKEN },
       payload: payload,
       muteHttpExceptions: true,
     });
     const code = res.getResponseCode();
     if (code < 200 || code >= 300) {
-      console.error('LINE reply failed:', code, res.getContentText());
+      console.error("LINE reply failed:", code, res.getContentText());
     }
   } catch (err) {
-    console.error('lineReply error:', err);
+    console.error("lineReply error:", err);
   }
 }
 
@@ -229,10 +268,15 @@ function getOrderTotalForUser(sheet, rowIndex) {
   const lastCol = sheet.getLastColumn();
   const header = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
   // พยายามหาโดยชื่อหัวคอลัมน์ก่อน รองรับสะกดทั้ง "ยอดสั่งซื้อ" และ "ยอดสั่งซ์้อ"
-  const possibleHeaders = ['ยอดสั่งซื้อ', 'ยอดสั่งซ์้อ', 'ยอดซื้อ', 'ยอดออเดอร์'];
+  const possibleHeaders = [
+    "ยอดสั่งซื้อ",
+    "ยอดสั่งซ์้อ",
+    "ยอดซื้อ",
+    "ยอดออเดอร์",
+  ];
   let colIndex = -1; // 1-based
   for (var i = 0; i < header.length; i++) {
-    var h = String(header[i] || '').trim();
+    var h = String(header[i] || "").trim();
     if (possibleHeaders.indexOf(h) !== -1) {
       colIndex = i + 1;
       break;
@@ -249,7 +293,7 @@ function getOrderTotalForUser(sheet, rowIndex) {
       const nL = toNumber(vL);
       return nL > 0 ? nL : 0;
     } catch (err) {
-      console.warn('getOrderTotalForUser read fallback error:', err);
+      console.warn("getOrderTotalForUser read fallback error:", err);
       return 0;
     }
   }
@@ -258,189 +302,219 @@ function getOrderTotalForUser(sheet, rowIndex) {
     const val = sheet.getRange(rowIndex, colIndex).getValue();
     return toNumber(val);
   } catch (err) {
-    console.warn('getOrderTotalForUser read error:', err);
+    console.warn("getOrderTotalForUser read error:", err);
     return 0;
   }
 }
 
 function toNumber(value) {
-  if (typeof value === 'number') return value;
-  var s = String(value || '').replace(/[,฿\s]/g, '');
+  if (typeof value === "number") return value;
+  var s = String(value || "").replace(/[,฿\s]/g, "");
   var n = parseFloat(s);
   return isNaN(n) ? 0 : n;
 }
 
 function normalizeThai(s) {
-  return String(s || '')
+  return String(s || "")
     .toLowerCase()
-    .replace(/[\u0E31\u0E34-\u0E3A\u0E47-\u0E4E]/g, '') // ลบวรรณยุกต์เพื่อเทียบง่าย
+    .replace(/[\u0E31\u0E34-\u0E3A\u0E47-\u0E4E]/g, "") // ลบวรรณยุกต์เพื่อเทียบง่าย
     .trim();
 }
 
 function buildFlexPointsBubble(data) {
-  const name = data.displayName || 'สมาชิก';
+  const name = data.displayName || "สมาชิก";
   const total = data.orderTotal || 0;
   const points = data.points || 0;
   const totalFmt = formatCurrency(total);
 
   return {
-    type: 'bubble',
-    size: 'mega',
-    hero: {
-      type: 'box',
-      layout: 'vertical',
+    type: "bubble",
+    size: "mega",
+    header: {
+      type: "box",
+      layout: "horizontal",
       contents: [
         {
-          type: 'box',
-          layout: 'vertical',
+          type: "image",
+          url: "https://bam-samada.github.io/line-member-form/assets/logo/CI%20LOGO-06.png",
+          size: "sm",
+          aspectMode: "fit",
+          aspectRatio: "1:1",
+          flex: 0
+        },
+        {
+          type: "text",
+          text: "X",
+          size: "xl",
+          weight: "bold",
+          color: "#9CA3AF",
+          gravity: "center",
+          flex: 0,
+          margin: "md",
+          align: "center"
+        },
+        {
+          type: "image",
+          url: "https://bam-samada.github.io/line-member-form/assets/logo/S-MAN%20%E0%B8%8A%E0%B8%B9%E0%B8%99%E0%B8%B4%E0%B9%89%E0%B8%A7%E0%B8%8A%E0%B8%B5%E0%B9%89%E0%B8%82%E0%B8%B6%E0%B9%89%E0%B8%99%E0%B8%82%E0%B9%89%E0%B8%B2%E0%B8%87%E0%B8%9A%E0%B8%99%201.jpg",
+          size: "sm",
+          aspectMode: "fit",
+          aspectRatio: "1:1",
+          flex: 0,
+          margin: "md"
+        }
+      ],
+      backgroundColor: "#FFFFFF",
+      paddingAll: "20px",
+      justifyContent: "center"
+    },
+    hero: {
+      type: "box",
+      layout: "vertical",
+      contents: [
+        {
+          type: "box",
+          layout: "vertical",
           contents: [
             {
-              type: 'text',
-              text: '⭐ คะแนนสะสม',
-              color: '#FFFFFF',
-              weight: 'bold',
-              size: 'xl',
-              align: 'center'
+              type: "text",
+              text: "คะแนนสะสม",
+              color: "#FFFFFF",
+              weight: "bold",
+              size: "xl",
+              align: "center"
             },
             {
-              type: 'text',
+              type: "text",
               text: name,
-              color: '#FEF3C7',
-              size: 'md',
-              align: 'center',
-              margin: 'md',
-              weight: 'bold'
+              color: "#FEF3C7",
+              size: "lg",
+              align: "center",
+              margin: "md",
+              weight: "bold"
             }
           ],
-          paddingAll: '24px'
+          paddingAll: "20px"
         }
       ],
       background: {
-        type: 'linearGradient',
-        angle: '135deg',
-        startColor: '#F59E0B',
-        endColor: '#D97706'
+        type: "linearGradient",
+        angle: "135deg",
+        startColor: "#F59E0B",
+        endColor: "#D97706"
       }
     },
     body: {
-      type: 'box',
-      layout: 'vertical',
-      spacing: 'lg',
+      type: "box",
+      layout: "vertical",
+      spacing: "xl",
       contents: [
         {
-          type: 'box',
-          layout: 'vertical',
+          type: "box",
+          layout: "vertical",
           contents: [
             {
-              type: 'text',
+              type: "text",
               text: String(points),
-              align: 'center',
-              weight: 'bold',
-              size: '5xl',
-              color: '#F59E0B'
+              align: "center",
+              weight: "bold",
+              size: "5xl",
+              color: "#F59E0B"
             },
             {
-              type: 'text',
-              text: 'POINTS',
-              align: 'center',
-              size: 'sm',
-              color: '#78716C',
-              margin: 'sm',
-              weight: 'bold'
+              type: "text",
+              text: "POINTS",
+              align: "center",
+              size: "md",
+              color: "#78716C",
+              margin: "md",
+              weight: "bold"
             }
           ],
-          paddingAll: '20px',
-          backgroundColor: '#FEF3C7',
-          cornerRadius: '16px',
-          borderWidth: '2px',
-          borderColor: '#F59E0B'
+          paddingAll: "32px",
+          backgroundColor: "#FEF3C7",
+          cornerRadius: "24px"
         },
         {
-          type: 'separator',
-          margin: 'lg'
-        },
-        {
-          type: 'box',
-          layout: 'vertical',
-          spacing: 'md',
+          type: "box",
+          layout: "vertical",
+          spacing: "lg",
           contents: [
             {
-              type: 'box',
-              layout: 'horizontal',
+              type: "box",
+              layout: "horizontal",
               contents: [
                 {
-                  type: 'text',
-                  text: '💰 ยอดสั่งซื้อรวม',
-                  size: 'sm',
-                  color: '#78716C',
-                  flex: 0
+                  type: "text",
+                  text: "ยอดสั่งซื้อรวม",
+                  size: "sm",
+                  color: "#78716C",
+                  flex: 1
                 },
                 {
-                  type: 'text',
-                  text: '฿' + totalFmt,
-                  align: 'end',
-                  size: 'md',
-                  weight: 'bold',
-                  color: '#0F172A'
+                  type: "text",
+                  text: "฿" + totalFmt,
+                  align: "end",
+                  size: "lg",
+                  weight: "bold",
+                  color: "#1F2937",
+                  flex: 1
                 }
               ]
             },
             {
-              type: 'box',
-              layout: 'horizontal',
+              type: "separator"
+            },
+            {
+              type: "box",
+              layout: "horizontal",
               contents: [
                 {
-                  type: 'text',
-                  text: '🎁 อัตราแลกแต้ม',
-                  size: 'sm',
-                  color: '#78716C',
-                  flex: 0
+                  type: "text",
+                  text: "อัตราแลกแต้ม",
+                  size: "sm",
+                  color: "#78716C",
+                  flex: 1
                 },
                 {
-                  type: 'text',
-                  text: '100฿ = 1PT',
-                  align: 'end',
-                  size: 'sm',
-                  weight: 'bold',
-                  color: '#0F172A'
+                  type: "text",
+                  text: "100฿ = 1PT",
+                  align: "end",
+                  size: "md",
+                  weight: "bold",
+                  color: "#1F2937",
+                  flex: 1
                 }
               ]
             }
           ],
-          paddingAll: '16px',
-          backgroundColor: '#F5F5F4',
-          cornerRadius: '12px'
+          paddingAll: "20px",
+          backgroundColor: "#F9FAFB",
+          cornerRadius: "20px"
         }
       ],
-      paddingAll: '20px'
+      paddingAll: "24px"
     },
     footer: {
-      type: 'box',
-      layout: 'vertical',
+      type: "box",
+      layout: "vertical",
       contents: [
         {
-          type: 'text',
-          text: '✨ ข้อมูลจากระบบสมาชิก',
-          size: 'xs',
-          color: '#A8A29E',
-          align: 'center',
-          margin: 'sm'
+          type: "text",
+          text: "ระบบสมาชิก S-MAN",
+          size: "xs",
+          color: "#9CA3AF",
+          align: "center"
         }
       ],
-      paddingAll: '12px'
-    },
-    styles: {
-      footer: {
-        separator: true,
-        separatorColor: '#E7E5E4'
-      }
+      paddingAll: "16px",
+      backgroundColor: "#FFFFFF"
     }
   };
 }
 
 function formatCurrency(n) {
   try {
-    return Number(n || 0).toLocaleString('th-TH', { maximumFractionDigits: 2 });
+    return Number(n || 0).toLocaleString("th-TH", { maximumFractionDigits: 2 });
   } catch (_) {
     return String(n || 0);
   }
@@ -450,31 +524,34 @@ function formatCurrency(n) {
 function parseRequest(e) {
   if (!e) return {};
   const p = e.parameter || {};
-  const contentType = (e.postData && e.postData.type) || '';
-  const body = (e.postData && e.postData.contents) || '';
+  const contentType = (e.postData && e.postData.type) || "";
+  const body = (e.postData && e.postData.contents) || "";
 
   let fromBody = {};
   try {
-    if (contentType.indexOf('application/json') !== -1 || contentType.indexOf('text/plain') !== -1) {
+    if (
+      contentType.indexOf("application/json") !== -1 ||
+      contentType.indexOf("text/plain") !== -1
+    ) {
       fromBody = body ? JSON.parse(body) : {};
     }
   } catch (_) {
     // ถ้า parse ไม่ได้ จะใช้ค่าจาก form parameters แทน
   }
 
-  const get = (k) => (fromBody[k] != null ? fromBody[k] : p[k]) || '';
+  const get = (k) => (fromBody[k] != null ? fromBody[k] : p[k]) || "";
   return {
-    action: (get('action') || '').toString().trim() || 'submit',
-    lineUserId: (get('lineUserId') || '').toString().trim(),
-    lineDisplayName: (get('lineDisplayName') || '').toString().trim(),
-    companyType: (get('companyType') || '').toString().trim(),
-    company: (get('company') || '').toString().trim(),
-    fullName: (get('fullName') || '').toString().trim(),
-    nickname: (get('nickname') || '').toString().trim(),
-    phone: (get('phone') || '').toString().trim(),
-    email: (get('email') || '').toString().trim(),
-    address: (get('address') || '').toString().trim(),
-    userAgent: (get('userAgent') || '').toString().trim()
+    action: (get("action") || "").toString().trim() || "submit",
+    lineUserId: (get("lineUserId") || "").toString().trim(),
+    lineDisplayName: (get("lineDisplayName") || "").toString().trim(),
+    companyType: (get("companyType") || "").toString().trim(),
+    company: (get("company") || "").toString().trim(),
+    fullName: (get("fullName") || "").toString().trim(),
+    nickname: (get("nickname") || "").toString().trim(),
+    phone: (get("phone") || "").toString().trim(),
+    email: (get("email") || "").toString().trim(),
+    address: (get("address") || "").toString().trim(),
+    userAgent: (get("userAgent") || "").toString().trim(),
   };
 }
 
@@ -484,17 +561,17 @@ function ensureSheet() {
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
     sheet.appendRow([
-      'Timestamp',
-      'LINE UserID',
-      'LINE Name',
-      'Company Type',
-      'Company',
-      'Full Name',
-      'Nickname',
-      'Phone',
-      'Email',
-      'Address',
-      'User Agent'
+      "Timestamp",
+      "LINE UserID",
+      "LINE Name",
+      "Company Type",
+      "Company",
+      "Full Name",
+      "Nickname",
+      "Phone",
+      "Email",
+      "Address",
+      "User Agent",
     ]);
   }
   ensureCompanyTypeColumn(sheet);
@@ -506,10 +583,10 @@ function ensureCompanyTypeColumn(sheet) {
   const lastCol = sheet.getLastColumn();
   if (lastCol === 0) return;
   const header = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
-  if (header.indexOf('Company Type') === -1) {
+  if (header.indexOf("Company Type") === -1) {
     // Insert after column 3 (after LINE Name)
     sheet.insertColumnAfter(3);
-    sheet.getRange(1, 4).setValue('Company Type');
+    sheet.getRange(1, 4).setValue("Company Type");
   }
 }
 
@@ -519,7 +596,7 @@ function findByLineUserId(sheet, lineUserId) {
   const values = sheet.getDataRange().getValues();
   // คอลัมน์ที่ 2 (index 1) คือ LINE UserID ตามหัวข้อที่ตั้งไว้
   for (let i = 1; i < values.length; i++) {
-    if ((values[i][1] || '').toString().trim() === lineUserId) {
+    if ((values[i][1] || "").toString().trim() === lineUserId) {
       return i + 1; // row index (1-based)
     }
   }
@@ -527,7 +604,26 @@ function findByLineUserId(sheet, lineUserId) {
 }
 
 function jsonOutput(obj) {
-  return ContentService
-    .createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(
+    ContentService.MimeType.JSON
+  );
+}
+
+// ฟังก์ชันทดสอบ: ใช้สำหรับดู JSON ของ Flex Message
+// เรียกใช้ผ่าน GET parameter ?action=testFlex
+// เช่น: https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec?action=testFlex
+function testFlexMessage() {
+  const sampleData = {
+    displayName: "ทดสอบ ระบบ",
+    orderTotal: 12345.67,
+    points: 123
+  };
+
+  const flexBubble = buildFlexPointsBubble(sampleData);
+
+  return {
+    type: "flex",
+    altText: "คะแนนสะสมของคุณ: " + sampleData.points + " POINTS",
+    contents: flexBubble
+  };
 }
