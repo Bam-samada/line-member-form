@@ -475,8 +475,10 @@
             );
           }
 
-          // พิจารณาว่าซ้ำก็ต่อเมื่อ API ระบุชัดเจนว่า exists === true เท่านั้น
-          const exists = data?.exists === true;
+          const exists =
+            data?.exists === true ||
+            String(data?.status || "").toLowerCase() === "exists" ||
+            String(data?.result || "").toLowerCase() === "exists";
 
           if (exists) {
             disableFormWithMessage(
@@ -509,7 +511,7 @@
 
           const profileTag = document.getElementById("profileTag");
           const lineNameSpan = document.getElementById("lineName");
-          lineNameSpan.textContent = `เข้าสู่ระบบด้วย: ${displayName}`;
+          lineNameSpan.textContent = `สมัครสมาชิกด้วย LINE: ${displayName}`;
           profileTag.style.display = "inline-flex";
           await preCheckLineUser(userId, displayName);
         } catch (err) {
@@ -588,15 +590,15 @@
 
           const isSuccess =
             (data && (data.status === "success" || data.result === "success")) ||
-            (typeof raw === "string" && /\b(success|saved)\b/i.test(raw));
+            (typeof raw === "string" && raw.toLowerCase().includes("success"));
 
           const isDuplicate =
             (data && (
-              data.exists === true ||
-              (typeof data.status === "string" && ["duplicate", "already", "registered"].includes(data.status.toLowerCase()))
+              (typeof data.status === "string" && ["duplicate", "exists", "already", "registered"].includes(data.status.toLowerCase())) ||
+              data.exists === true
             )) ||
             // ใช้ข้อความ fallback เฉพาะกรณี parse JSON ไม่ได้เท่านั้น
-            (!data && typeof raw === "string" && /\b(duplicate|already|registered)\b/i.test(raw));
+            (!data && typeof raw === "string" && /duplicate|already|registered/i.test(raw));
 
           if (isDuplicate) {
             disableFormWithMessage("บัญชี LINE นี้สมัครสมาชิกแล้ว", "warning");
