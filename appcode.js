@@ -38,6 +38,7 @@ function doPost(e) {
       new Date(),
       req.lineUserId || '',
       req.lineDisplayName || '',
+      req.companyType || '',
       req.company || '',
       req.fullName || '',
       req.nickname || '',
@@ -76,6 +77,7 @@ function parseRequest(e) {
     action: (get('action') || '').toString().trim() || 'submit',
     lineUserId: (get('lineUserId') || '').toString().trim(),
     lineDisplayName: (get('lineDisplayName') || '').toString().trim(),
+    companyType: (get('companyType') || '').toString().trim(),
     company: (get('company') || '').toString().trim(),
     fullName: (get('fullName') || '').toString().trim(),
     nickname: (get('nickname') || '').toString().trim(),
@@ -95,6 +97,7 @@ function ensureSheet() {
       'Timestamp',
       'LINE UserID',
       'LINE Name',
+      'Company Type',
       'Company',
       'Full Name',
       'Nickname',
@@ -104,7 +107,20 @@ function ensureSheet() {
       'User Agent'
     ]);
   }
+  ensureCompanyTypeColumn(sheet);
   return sheet;
+}
+
+// Ensure the sheet has a dedicated column for Company Type at column 4
+function ensureCompanyTypeColumn(sheet) {
+  const lastCol = sheet.getLastColumn();
+  if (lastCol === 0) return;
+  const header = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+  if (header.indexOf('Company Type') === -1) {
+    // Insert after column 3 (after LINE Name)
+    sheet.insertColumnAfter(3);
+    sheet.getRange(1, 4).setValue('Company Type');
+  }
 }
 
 // หา row index ของ LINE UserID (ไม่รวม header) ถ้าไม่พบ return -1

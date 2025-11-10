@@ -165,6 +165,46 @@
         color: #9ca3af;
       }
 
+      /* Checkbox pill group for company type */
+      .check-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .check-pill {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+      }
+      .check-pill input {
+        position: absolute;
+        opacity: 0;
+        width: 1px;
+        height: 1px;
+        pointer-events: none;
+      }
+      .check-pill span {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid #e5e7eb;
+        background-color: #f9fafb;
+        color: #374151;
+        font-size: 0.85rem;
+        transition: all 0.18s ease;
+        user-select: none;
+      }
+      .check-pill input:checked + span {
+        background-color: #eef2ff;
+        color: #4f46e5;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.08);
+      }
+      .check-pill input:focus + span {
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.18);
+      }
+
       .btn-submit {
         margin-top: 4px;
         width: 100%;
@@ -287,15 +327,22 @@
           <input type="hidden" id="lineDisplayName" name="lineDisplayName" />
 
           <div class="field-group">
-            <label for="companyType"
-              >ประเภทธุรกิจ <span style="color: #ef4444">*</span></label
-            >
-            <select id="companyType" name="companyType" required>
-              <option value="" disabled selected>เลือกประเภท</option>
-              <option value="ร้าน">ร้าน</option>
-              <option value="ห้างหุ้นส่วน">ห้างหุ้นส่วน</option>
-              <option value="บริษัท">บริษัท</option>
-            </select>
+            <label>ประเภทธุรกิจ <span style="color: #ef4444">*</span></label>
+            <div class="check-group" role="group" aria-label="ประเภทธุรกิจ">
+              <label class="check-pill">
+                <input type="checkbox" name="companyType" value="ร้าน" />
+                <span>ร้าน</span>
+              </label>
+              <label class="check-pill">
+                <input type="checkbox" name="companyType" value="ห้างหุ้นส่วน" />
+                <span>ห้างหุ้นส่วน</span>
+              </label>
+              <label class="check-pill">
+                <input type="checkbox" name="companyType" value="บริษัท" />
+                <span>บริษัท</span>
+              </label>
+            </div>
+            <div class="helper">เลือกได้มากกว่า 1 ประเภท</div>
           </div>
 
           <div class="field-group">
@@ -486,7 +533,11 @@
             lineUserId: document.getElementById("lineUserId").value || "",
             lineDisplayName:
               document.getElementById("lineDisplayName").value || "",
-          companyType: document.getElementById("companyType").value.trim(),
+          companyType: Array.from(
+              document.querySelectorAll('input[name="companyType"]:checked')
+            )
+            .map((el) => el.value)
+            .join(", "),
             company: document.getElementById("company").value.trim(),
             fullName: document.getElementById("fullName").value.trim(),
             nickname: document.getElementById("nickname").value.trim(),
