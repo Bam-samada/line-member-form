@@ -1,6 +1,12 @@
 const SHEET_ID = '1f6WHZz1y_7OblNPLGSw3cSe8UY97vqmD9UzBNQTxS5g';
 const SHEET_NAME = 'FormResponses';
 
+// LINE Messaging API: ตั้งค่า Channel Access Token ตรงนี้ (ใส่ค่าโดยตรงในโค้ด)
+// หมายเหตุ: เปลี่ยนสตริงด้านล่างเป็น Channel Access Token ของบอทคุณ
+const LINE_CHANNEL_ACCESS_TOKEN = 'bwfEzqJqn1bIkHKdX7lPgPF33+4HsYMlL/gIMGLrhkvo053s1Ig8JEzu1lcO2Ci5bEDESBSWkKcLtPIY+hA74lQmCuXzQDNj1/YDegnwckwjmqh9y5BV0Tz2tWtYBHbzCrURW6mMTZBv/to93me8YAdB04t89/1O/w1cDnyilFU=';
+const LINE_REPLY_URL = 'https://api.line.me/v2/bot/message/reply';
+const LINE_PROFILE_URL = 'https://api.line.me/v2/bot/profile/';
+
 // เรียกด้วย GET (เช่น เปิดลิงก์ใน browser ตรงๆ)
 // เอาไว้เช็คว่า Web App ทำงาน + ตั้ง permission ถูก
 function doGet(e) {
@@ -11,7 +17,21 @@ function doGet(e) {
 
 function doPost(e) {
   try {
+    // 1) ตรวจจับ LINE Webhook ก่อน (application/json ที่มี events)
+    if (isLineWebhook(e)) {
+      handleLineWebhook(e);
+      return ContentService
+        .createTextOutput('OK')
+        .setMimeType(ContentService.MimeType.TEXT);
+    }
+
+    // 2) โหมดฟอร์ม (หน้าเว็บ) เดิม - ต้องมี action parameter
     const req = parseRequest(e);
+
+    // ถ้าไม่มี action หรือ lineUserId แสดงว่าไม่ใช่คำขอจากฟอร์ม (อาจเป็นข้อความจากแชท)
+    if (!req.action && !req.lineUserId) {
+      return jsonOutput({ status: 'ignored', message: 'Not a form submission' });
+    }
 
     // เตรียมชีต + หัวตาราง
     const sheet = ensureSheet();
@@ -53,6 +73,376 @@ function doPost(e) {
   } catch (error) {
     console.error('doPost error:', error);
     return jsonOutput({ status: 'error', message: error.toString() });
+  }
+}
+
+// ---------- LINE Webhook Handlers ----------
+
+function isLineWebhook(e) {
+  try {
+    if (!e || !e.postData || !e.postData.contents) return false;
+    const contentType = (e.postData.type || '').toLowerCase();
+    if (contentType.indexOf('application/json') === -1) return false;
+    const body = JSON.parse(e.postData.contents);
+    return body && Array.isArray(body.events);
+  } catch (_) {
+    return false;
+  }
+}
+
+function handleLineWebhook(e) {
+  var body = {};
+  try {
+    body = JSON.parse(e.postData.contents || '{}');
+  } catch (err) {
+    console.error('Invalid JSON webhook:', err);
+    return;
+  }
+
+  const events = body.events || [];
+  events.forEach(function (event) {
+    try {
+      if (event.type === 'message' && event.message && event.message.type === 'text') {
+        const text = String(event.message.text || '').trim();
+        const norm = normalizeThai(text);
+        // คีย์เวิร์ดที่ใช้เรียกดูคะแนน
+        const keywords = ['point', 'points', 'คะแนน', 'คะแนนของฉัน', 'พอยท์', 'พอยต์', 'แต้ม'];
+        const matched = keywords.some(function (k) { return norm.indexOf(normalizeThai(k)) !== -1; });
+
+        if (matched) {
+          replyUserPoints(event);
+          return;
+        }
+
+        // ข้อความอื่นๆ: ตอบกลับข้อความเดียวกัน (echo)
+        const replyToken = event.replyToken;
+        if (replyToken) {
+          const messages = [{ type: 'text', text: text }];
+          lineReply(replyToken, messages);
+        }
+      }
+      // ไม่จัดการอีเวนต์อื่น ๆ
+    } catch (evErr) {
+      console.error('handle event error:', evErr);
+    }
+  });
+}
+
+function replyUserPoints(event) {
+  const userId = (event && event.source && event.source.userId) || '';
+  const replyToken = event.replyToken;
+  if (!userId || !replyToken) return;
+
+  const sheet = ensureSheet();
+  const rowIndex = findByLineUserId(sheet, userId);
+
+  let displayName = '';
+  try {
+    // พยายามอ่านชื่อจากชีตก่อน (คอลัมน์ 3: LINE Name)
+    if (rowIndex !== -1) {
+      const vals = sheet.getRange(rowIndex, 1, 1, sheet.getLastColumn()).getValues()[0];
+      displayName = String(vals[2] || '');
+    }
+    if (!displayName) {
+      // fallback: ดึงโปรไฟล์จาก LINE API
+      const prof = getLineProfile(userId);
+      displayName = (prof && prof.displayName) || '';
+    }
+  } catch (_) {}
+
+  const orderTotal = getOrderTotalForUser(sheet, rowIndex);
+  const points = Math.floor(orderTotal / 100);
+
+  const flexBubble = buildFlexPointsBubble({
+    displayName: displayName,
+    orderTotal: orderTotal,
+    points: points
+  });
+
+  const messages = [
+    {
+      type: 'flex',
+      altText: 'คะแนนสะสมของคุณ: ' + points + ' POINTS',
+      contents: flexBubble
+    }
+  ];
+  lineReply(replyToken, messages);
+}
+
+function buildPointsTextMessage(data) {
+  const name = data.displayName || 'สมาชิก';
+  const total = data.orderTotal || 0;
+  const points = data.points || 0;
+  const totalFmt = formatCurrency(total);
+  var lines = [];
+  lines.push('⭐ คะแนนสะสมของคุณ');
+  lines.push('ชื่อ: ' + name);
+  lines.push('ยอดสั่งซื้อรวม: ฿' + totalFmt);
+  lines.push('คะแนน: ' + String(points) + ' POINTS');
+  lines.push('อัตราแลกแต้ม: 100 บาท = 1 POINT');
+  return lines.join('\n');
+}
+
+function getLineProfile(userId) {
+  if (!LINE_CHANNEL_ACCESS_TOKEN) return null;
+  try {
+    const res = UrlFetchApp.fetch(LINE_PROFILE_URL + encodeURIComponent(userId), {
+      method: 'get',
+      headers: { Authorization: 'Bearer ' + LINE_CHANNEL_ACCESS_TOKEN },
+      muteHttpExceptions: true,
+    });
+    const code = res.getResponseCode();
+    if (code >= 200 && code < 300) {
+      return JSON.parse(res.getContentText() || '{}');
+    }
+  } catch (err) {
+    console.warn('getLineProfile error:', err);
+  }
+  return null;
+}
+
+function lineReply(replyToken, messages) {
+  if (!LINE_CHANNEL_ACCESS_TOKEN) {
+    console.warn('Missing LINE_CHANNEL_ACCESS_TOKEN: skip reply');
+    return;
+  }
+  try {
+    const payload = JSON.stringify({ replyToken: replyToken, messages: messages });
+    const res = UrlFetchApp.fetch(LINE_REPLY_URL, {
+      method: 'post',
+      contentType: 'application/json',
+      headers: { Authorization: 'Bearer ' + LINE_CHANNEL_ACCESS_TOKEN },
+      payload: payload,
+      muteHttpExceptions: true,
+    });
+    const code = res.getResponseCode();
+    if (code < 200 || code >= 300) {
+      console.error('LINE reply failed:', code, res.getContentText());
+    }
+  } catch (err) {
+    console.error('lineReply error:', err);
+  }
+}
+
+function getOrderTotalForUser(sheet, rowIndex) {
+  if (!sheet || rowIndex === -1) return 0;
+  const lastCol = sheet.getLastColumn();
+  const header = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+  // พยายามหาโดยชื่อหัวคอลัมน์ก่อน รองรับสะกดทั้ง "ยอดสั่งซื้อ" และ "ยอดสั่งซ์้อ"
+  const possibleHeaders = ['ยอดสั่งซื้อ', 'ยอดสั่งซ์้อ', 'ยอดซื้อ', 'ยอดออเดอร์'];
+  let colIndex = -1; // 1-based
+  for (var i = 0; i < header.length; i++) {
+    var h = String(header[i] || '').trim();
+    if (possibleHeaders.indexOf(h) !== -1) {
+      colIndex = i + 1;
+      break;
+    }
+  }
+  // ไม่เจอชื่อหัว: พยายามอ่านจากคอลัมน์ K (11) ตามที่แจ้ง
+  // หากมีโครงสร้างแผ่นงานที่ถูกขยับ (เช่น เพิ่มคอลัมน์ก่อนหน้า) ให้ลองอ่าน L (12) เป็นแผนสำรอง
+  if (colIndex === -1) {
+    try {
+      const vK = sheet.getRange(rowIndex, 11).getValue();
+      const nK = toNumber(vK);
+      if (nK > 0) return nK;
+      const vL = sheet.getRange(rowIndex, 12).getValue();
+      const nL = toNumber(vL);
+      return nL > 0 ? nL : 0;
+    } catch (err) {
+      console.warn('getOrderTotalForUser read fallback error:', err);
+      return 0;
+    }
+  }
+
+  try {
+    const val = sheet.getRange(rowIndex, colIndex).getValue();
+    return toNumber(val);
+  } catch (err) {
+    console.warn('getOrderTotalForUser read error:', err);
+    return 0;
+  }
+}
+
+function toNumber(value) {
+  if (typeof value === 'number') return value;
+  var s = String(value || '').replace(/[,฿\s]/g, '');
+  var n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+function normalizeThai(s) {
+  return String(s || '')
+    .toLowerCase()
+    .replace(/[\u0E31\u0E34-\u0E3A\u0E47-\u0E4E]/g, '') // ลบวรรณยุกต์เพื่อเทียบง่าย
+    .trim();
+}
+
+function buildFlexPointsBubble(data) {
+  const name = data.displayName || 'สมาชิก';
+  const total = data.orderTotal || 0;
+  const points = data.points || 0;
+  const totalFmt = formatCurrency(total);
+
+  return {
+    type: 'bubble',
+    size: 'mega',
+    hero: {
+      type: 'box',
+      layout: 'vertical',
+      contents: [
+        {
+          type: 'box',
+          layout: 'vertical',
+          contents: [
+            {
+              type: 'text',
+              text: '⭐ คะแนนสะสม',
+              color: '#FFFFFF',
+              weight: 'bold',
+              size: 'xl',
+              align: 'center'
+            },
+            {
+              type: 'text',
+              text: name,
+              color: '#FEF3C7',
+              size: 'md',
+              align: 'center',
+              margin: 'md',
+              weight: 'bold'
+            }
+          ],
+          paddingAll: '24px'
+        }
+      ],
+      background: {
+        type: 'linearGradient',
+        angle: '135deg',
+        startColor: '#F59E0B',
+        endColor: '#D97706'
+      }
+    },
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      spacing: 'lg',
+      contents: [
+        {
+          type: 'box',
+          layout: 'vertical',
+          contents: [
+            {
+              type: 'text',
+              text: String(points),
+              align: 'center',
+              weight: 'bold',
+              size: '5xl',
+              color: '#F59E0B'
+            },
+            {
+              type: 'text',
+              text: 'POINTS',
+              align: 'center',
+              size: 'sm',
+              color: '#78716C',
+              margin: 'sm',
+              weight: 'bold'
+            }
+          ],
+          paddingAll: '20px',
+          backgroundColor: '#FEF3C7',
+          cornerRadius: '16px',
+          borderWidth: '2px',
+          borderColor: '#F59E0B'
+        },
+        {
+          type: 'separator',
+          margin: 'lg'
+        },
+        {
+          type: 'box',
+          layout: 'vertical',
+          spacing: 'md',
+          contents: [
+            {
+              type: 'box',
+              layout: 'horizontal',
+              contents: [
+                {
+                  type: 'text',
+                  text: '💰 ยอดสั่งซื้อรวม',
+                  size: 'sm',
+                  color: '#78716C',
+                  flex: 0
+                },
+                {
+                  type: 'text',
+                  text: '฿' + totalFmt,
+                  align: 'end',
+                  size: 'md',
+                  weight: 'bold',
+                  color: '#0F172A'
+                }
+              ]
+            },
+            {
+              type: 'box',
+              layout: 'horizontal',
+              contents: [
+                {
+                  type: 'text',
+                  text: '🎁 อัตราแลกแต้ม',
+                  size: 'sm',
+                  color: '#78716C',
+                  flex: 0
+                },
+                {
+                  type: 'text',
+                  text: '100฿ = 1PT',
+                  align: 'end',
+                  size: 'sm',
+                  weight: 'bold',
+                  color: '#0F172A'
+                }
+              ]
+            }
+          ],
+          paddingAll: '16px',
+          backgroundColor: '#F5F5F4',
+          cornerRadius: '12px'
+        }
+      ],
+      paddingAll: '20px'
+    },
+    footer: {
+      type: 'box',
+      layout: 'vertical',
+      contents: [
+        {
+          type: 'text',
+          text: '✨ ข้อมูลจากระบบสมาชิก',
+          size: 'xs',
+          color: '#A8A29E',
+          align: 'center',
+          margin: 'sm'
+        }
+      ],
+      paddingAll: '12px'
+    },
+    styles: {
+      footer: {
+        separator: true,
+        separatorColor: '#E7E5E4'
+      }
+    }
+  };
+}
+
+function formatCurrency(n) {
+  try {
+    return Number(n || 0).toLocaleString('th-TH', { maximumFractionDigits: 2 });
+  } catch (_) {
+    return String(n || 0);
   }
 }
 
