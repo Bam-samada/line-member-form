@@ -328,21 +328,21 @@
 
           <div class="field-group">
             <label>ประเภทธุรกิจ <span style="color: #ef4444">*</span></label>
-            <div class="check-group" role="group" aria-label="ประเภทธุรกิจ">
+            <div class="check-group" role="radiogroup" aria-label="ประเภทธุรกิจ">
               <label class="check-pill">
-                <input type="checkbox" name="companyType" value="ร้าน" />
+                <input type="radio" name="companyType" value="ร้าน" required />
                 <span>ร้าน</span>
               </label>
               <label class="check-pill">
-                <input type="checkbox" name="companyType" value="ห้างหุ้นส่วน" />
+                <input type="radio" name="companyType" value="ห้างหุ้นส่วน" />
                 <span>ห้างหุ้นส่วน</span>
               </label>
               <label class="check-pill">
-                <input type="checkbox" name="companyType" value="บริษัท" />
+                <input type="radio" name="companyType" value="บริษัท" />
                 <span>บริษัท</span>
               </label>
             </div>
-            <div class="helper">เลือกได้มากกว่า 1 ประเภท</div>
+            <div class="helper">เลือกได้ 1 ประเภท</div>
           </div>
 
           <div class="field-group">
@@ -533,11 +533,7 @@
             lineUserId: document.getElementById("lineUserId").value || "",
             lineDisplayName:
               document.getElementById("lineDisplayName").value || "",
-          companyType: Array.from(
-              document.querySelectorAll('input[name="companyType"]:checked')
-            )
-            .map((el) => el.value)
-            .join(", "),
+          companyType: (document.querySelector('input[name="companyType"]:checked')?.value || ""),
             company: document.getElementById("company").value.trim(),
             fullName: document.getElementById("fullName").value.trim(),
             nickname: document.getElementById("nickname").value.trim(),
