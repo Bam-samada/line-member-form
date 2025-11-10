@@ -129,7 +129,8 @@
       }
 
       input,
-      textarea {
+      textarea,
+      select {
         width: 100%;
         padding: 9px 11px;
         border-radius: 12px;
@@ -141,7 +142,8 @@
       }
 
       input:focus,
-      textarea:focus {
+      textarea:focus,
+      select:focus {
         border-color: #4f46e5;
         box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.08);
         background-color: #ffffff;
@@ -283,6 +285,18 @@
           <!-- Hidden fields for LINE -->
           <input type="hidden" id="lineUserId" name="lineUserId" />
           <input type="hidden" id="lineDisplayName" name="lineDisplayName" />
+
+          <div class="field-group">
+            <label for="companyType"
+              >ประเภทธุรกิจ <span style="color: #ef4444">*</span></label
+            >
+            <select id="companyType" name="companyType" required>
+              <option value="" disabled selected>เลือกประเภท</option>
+              <option value="ร้าน">ร้าน</option>
+              <option value="ห้างหุ้นส่วน">ห้างหุ้นส่วน</option>
+              <option value="บริษัท">บริษัท</option>
+            </select>
+          </div>
 
           <div class="field-group">
             <label for="company"
@@ -471,20 +485,21 @@
         statusEl.textContent = "";
         statusEl.className = "status-message";
 
-        const payload = {
-          lineUserId: document.getElementById("lineUserId").value || "",
-          lineDisplayName:
-            document.getElementById("lineDisplayName").value || "",
-          company: document.getElementById("company").value.trim(),
-          fullName: document.getElementById("fullName").value.trim(),
-          nickname: document.getElementById("nickname").value.trim(),
-          phone: document.getElementById("phone").value.trim(),
-          email: document.getElementById("email").value.trim(),
-          address: document.getElementById("address").value.trim(),
-          // userAgent: navigator.userAgent,
-        };
+          const payload = {
+            lineUserId: document.getElementById("lineUserId").value || "",
+            lineDisplayName:
+              document.getElementById("lineDisplayName").value || "",
+          companyType: document.getElementById("companyType").value.trim(),
+            company: document.getElementById("company").value.trim(),
+            fullName: document.getElementById("fullName").value.trim(),
+            nickname: document.getElementById("nickname").value.trim(),
+            phone: document.getElementById("phone").value.trim(),
+            email: document.getElementById("email").value.trim(),
+            address: document.getElementById("address").value.trim(),
+            // userAgent: navigator.userAgent,
+          };
 
-        if (!payload.company || !payload.fullName || !payload.phone) {
+        if (!payload.companyType || !payload.company || !payload.fullName || !payload.phone) {
           statusEl.textContent = "กรุณากรอกข้อมูลที่มีเครื่องหมาย * ให้ครบถ้วน";
           statusEl.classList.add("status-error");
           statusEl.style.display = "block";
