@@ -385,11 +385,12 @@ function buildFlexPointsBubble(data) {
           contents: [
             {
               type: "image",
-              url: "https://bam-samada.github.io/line-member-form/assets/logo/1029999.jpg",
+              url: "https://bam-samada.github.io/line-member-form/assets/logo/1030766.jpg",
               size: "full",
               aspectMode: "cover",
               gravity: "center",
-              align: "center"
+              align: "center",
+              aspectRatio: "1.7:2"
             }
           ],
           cornerRadius: "15px"
