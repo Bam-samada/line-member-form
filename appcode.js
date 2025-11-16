@@ -146,11 +146,11 @@ function handleLineWebhook(e) {
         }
 
         // ข้อความอื่นๆ: ตอบกลับข้อความเดียวกัน (echo)
-        const replyToken = event.replyToken;
-        if (replyToken) {
-          const messages = [{ type: "text", text: text }];
-          lineReply(replyToken, messages);
-        }
+        // const replyToken = event.replyToken;
+        // if (replyToken) {
+        //   const messages = [{ type: "text", text: text }];
+        //   lineReply(replyToken, messages);
+        // }
       }
       // ไม่จัดการอีเวนต์อื่น ๆ
     } catch (evErr) {
@@ -183,8 +183,10 @@ function replyUserPoints(event) {
     }
   } catch (_) { }
 
-  const orderTotal = getOrderTotalForUser(sheet, rowIndex);
-  const points = Math.floor(orderTotal / 100);
+  // รวมคะแนนจากยอดสะสมทุกเดือน และแสดงยอดรวมทั้งหมด (ไม่ใช่เฉพาะเดือนนี้)
+  const lifetimeTotal = getLifetimeOrderTotalFromRowMonthlyColumns(sheet, rowIndex);
+  const orderTotal = lifetimeTotal || 0;
+  const points = Math.floor((orderTotal) / 100);
 
   const flexBubble = buildFlexPointsBubble({
     displayName: displayName,
@@ -303,6 +305,26 @@ function getOrderTotalForUser(sheet, rowIndex) {
     return toNumber(val);
   } catch (err) {
     console.warn("getOrderTotalForUser read error:", err);
+    return 0;
+  }
+}
+
+// รวมยอดสะสมจากคอลัมน์ K (11) ไปจนถึงคอลัมน์สุดท้ายของแถว
+function getLifetimeOrderTotalFromRowMonthlyColumns(sheet, rowIndex) {
+  try {
+    if (!sheet || rowIndex === -1) return 0;
+    const lastCol = sheet.getLastColumn();
+    if (lastCol < 11) return 0;
+    const width = lastCol - 11 + 1; // จำนวนคอลัมน์ตั้งแต่ K ถึงสุดท้าย
+    const row = sheet.getRange(rowIndex, 11, 1, width).getValues()[0];
+    var sum = 0;
+    for (var i = 0; i < row.length; i++) {
+      const n = toNumber(row[i]);
+      if (!isNaN(n) && isFinite(n)) sum += n;
+    }
+    return sum;
+  } catch (err) {
+    console.warn("getLifetimeOrderTotalFromRowMonthlyColumns error:", err);
     return 0;
   }
 }
